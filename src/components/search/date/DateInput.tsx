@@ -5,10 +5,11 @@ import { useTripType } from '@/hooks/use-trip-type'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/solid'
 
 interface DateInputProps {
-  type: 'departure' | 'return'
-  value: string
-  subValue: string
-  onChange?: (newDate: Date) => void
+  type: string;
+  value: string;
+  onChange: (date: Date) => void;
+  subValue: string;
+  disabled?: boolean; // Add this line
 }
 
 const DateInput: React.FC<DateInputProps> = ({ type, value, subValue, onChange }) => {
