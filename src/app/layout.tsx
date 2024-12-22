@@ -6,8 +6,8 @@ import dynamic from "next/dynamic";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Travel Website",
-  description: "Your complete travel solution",
+  title: "The City Flyers",
+  description: "Fly high, reach the sky",
 };
 
 // Dynamically import Sidebar and Header for better performance
