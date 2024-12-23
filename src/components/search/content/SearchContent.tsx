@@ -2,10 +2,23 @@
 
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { ArrowRightLeftIcon as ArrowsRightLeftIcon, ChevronDownIcon, CalendarIcon, Users } from 'lucide-react';
+import {
+  ArrowRightLeftIcon as ArrowsRightLeftIcon,
+  ChevronDownIcon,
+  CalendarIcon,
+  Users
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const TripTypes = dynamic(() => import('../trip/TripTypes'));
+/**
+ * Dynamically import subcomponents (if you’re using Next.js + dynamic import).
+ * Alternatively, you can import them directly if you want server/client stubbing.
+ */
+const TripTypes = dynamic(() => import('../trip/TripTypes'), {
+  // optional: loading: () => <p>Loading trip types...</p>
+});
+import type { TripType } from '../trip/TripTypes';
+
 const LocationInput = dynamic(() => import('../location/LocationInput'));
 const DateInput = dynamic(() => import('../date/DateInput'));
 const TravelersInput = dynamic(() => import('../travelers/TravelersInput'));
@@ -26,20 +39,24 @@ interface Passengers {
 }
 
 const SearchContent = () => {
+  // States
+  const [tripType, setTripType] = useState<TripType>('One Way');
   const [fromCity, setFromCity] = useState('Dhaka');
   const [fromAirport, setFromAirport] = useState('Hazrat Shahjalal International Airport');
   const [toCity, setToCity] = useState('Chittagong');
   const [toAirport, setToAirport] = useState('Shah Amanat International');
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [tripType, setTripType] = useState('One Way');
+
   const [passengers, setPassengers] = useState<Passengers>({
     adults: 1,
     children: 0,
     infants: 0
   });
-  const [departureDate, setDepartureDate] = useState<string>('Select date');
-  const [returnDate, setReturnDate] = useState<string>('Select date');
 
+  const [departureDate, setDepartureDate] = useState('Select date');
+  const [returnDate, setReturnDate] = useState('Select date');
+
+  // Sample location suggestions
   const suggestions: Airport[] = [
     {
       city: 'Dhaka',
@@ -61,50 +78,57 @@ const SearchContent = () => {
     }
   ];
 
+  // Swap "From" and "To" inputs
   const swapLocations = () => {
+    const oldFromCity = fromCity;
+    const oldFromAirport = fromAirport;
     setFromCity(toCity);
     setFromAirport(toAirport);
-    setToCity(fromCity);
-    setToAirport(fromAirport);
+    setToCity(oldFromCity);
+    setToAirport(oldFromAirport);
   };
 
+  // Toggle collapsed/expanded
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
 
+  // Return a string like "1 Traveler" or "3 Travelers"
   const getPassengerSummary = () => {
     const total = passengers.adults + passengers.children + passengers.infants;
     return `${total} Traveler${total > 1 ? 's' : ''}`;
   };
 
-  const handleTripTypeChange = (type: string) => {
+  // If user selects "One Way," reset return date
+  const handleTripTypeChange = (type: TripType) => {
     setTripType(type);
     if (type === 'One Way') {
       setReturnDate('Select date');
     }
   };
 
+  // Date change handlers
   const handleDepartureDateChange = (newDate: string) => {
     setDepartureDate(newDate);
   };
-
   const handleReturnDateChange = (newDate: string) => {
     setReturnDate(newDate);
   };
 
-  const handlePassengersUpdate = (newPassengers: Passengers) => {
-    setPassengers(newPassengers);
-  };
-
+  // On "Search" button click
   const handleSearch = () => {
     console.log('Searching for flights...');
     toggleCollapse();
   };
 
+  // -------------------------------------------------------------------------
+  // RENDER
+  // -------------------------------------------------------------------------
   return (
     <div className="w-full bg-gray-100 dark:bg-gray-900 p-6 space-y-6">
+      {/* If collapsed, show a summary */}
       {isCollapsed ? (
-        <div className="flex flex-col space-y-2 bg-white dark:bg-gray-800 rounded-none p-4 shadow-sm">
+        <div className="flex flex-col space-y-2 bg-white dark:bg-gray-800 rounded p-4 shadow-sm">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
               <span className="font-semibold">{fromCity}</span>
@@ -123,8 +147,10 @@ const SearchContent = () => {
             <div className="flex items-center gap-1">
               <CalendarIcon className="h-4 w-4" />
               <span>
-                {departureDate}{' '}
-                {tripType !== 'One Way' && returnDate !== 'Select date' && `- ${returnDate}`}
+                {departureDate}
+                {tripType !== 'One Way' && returnDate !== 'Select date'
+                  ? ` - ${returnDate}`
+                  : ''}
               </span>
             </div>
             <div className="flex items-center gap-1">
@@ -139,11 +165,30 @@ const SearchContent = () => {
         </div>
       ) : (
         <>
+          {/* 
+            1) The TripTypes radio group 
+            (One Way / Round Trip / Multi City)
+          */}
           <TripTypes selectedType={tripType} onSelect={handleTripTypeChange} />
 
+          {/* 2) Main layout: 3 columns on large screens */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+            {/* 
+              Column 1: 
+              From & To stacked vertically, with an absolute swap button in the middle. 
+              Also the invisible placeholder to prevent layout shift. 
+            */}
             <div className="lg:col-span-5">
-              <div className="relative grid grid-rows-2 gap-0">
+              <div
+                className="
+                  relative
+                  grid
+                  grid-rows-2
+                  gap-0
+                  min-h-[140px]
+                "
+              >
+                {/* FROM location (first row) */}
                 <LocationInput
                   type="from"
                   value={fromCity}
@@ -151,6 +196,7 @@ const SearchContent = () => {
                   onChange={setFromCity}
                   suggestions={suggestions}
                 />
+                {/* TO location (second row) */}
                 <LocationInput
                   type="to"
                   value={toCity}
@@ -158,18 +204,35 @@ const SearchContent = () => {
                   onChange={setToCity}
                   suggestions={suggestions}
                 />
+
+                {/* Invisible placeholder so no CLS on the absolute button */}
+                <div
+                  className="
+                    invisible
+                    absolute
+                    z-0
+                    w-8
+                    h-8
+                    left-1/2
+                    top-1/2
+                    -translate-x-1/2
+                    -translate-y-1/2
+                  "
+                  aria-hidden="true"
+                />
+
+                {/* SWAP button */}
                 <button
                   type="button"
                   onClick={swapLocations}
                   className={cn(
-                    'absolute right-20 top-1/2 translate-x-1/2 -translate-y-1/2 z-10 rounded-full',
-                    'w-8 h-8',
-                    'bg-white dark:bg-gray-800',
+                    'absolute z-10 w-8 h-8',
+                    'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
+                    'rounded-full bg-white dark:bg-gray-800',
                     'border border-gray-200 dark:border-gray-700',
                     'flex items-center justify-center',
                     'hover:bg-gray-50 dark:hover:bg-gray-700',
-                    'focus:outline-none focus:ring-2 focus:ring-gray-400',
-                    'shadow-sm'
+                    'focus:outline-none focus:ring-2 focus:ring-gray-400 shadow-sm'
                   )}
                 >
                   <ArrowsRightLeftIcon
@@ -180,6 +243,7 @@ const SearchContent = () => {
               </div>
             </div>
 
+            {/* Column 2: Date Pickers */}
             <div className="lg:col-span-4">
               <div className="grid grid-cols-2 gap-0 h-full">
                 <DateInput
@@ -198,6 +262,7 @@ const SearchContent = () => {
               </div>
             </div>
 
+            {/* Column 3: Passengers & cabin class */}
             <div className="lg:col-span-3">
               <TravelersInput
                 value={getPassengerSummary()}
@@ -207,8 +272,10 @@ const SearchContent = () => {
             </div>
           </div>
 
+          {/* Fare Types */}
           <FareTypes />
 
+          {/* Search button */}
           <div className="flex justify-center w-full">
             <SearchButton onClick={handleSearch} isCollapsed={isCollapsed} />
           </div>
